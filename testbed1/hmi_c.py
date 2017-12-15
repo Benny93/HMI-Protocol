@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import time
 import can
+import constants as const
 from random import uniform
 
 """
@@ -11,18 +12,22 @@ hmi controller prototype that acts like a server
 bustype = 'socketcan_native'
 channel = 'vcan0'
 
-identifier = 0x0
 bus = can.interface.Bus(channel=channel, bustype=bustype)
 
 
 # TODO: Catch if instance fails
 
-def send_response(data):
+def send_response(data, msg_id):
     """
     Answers with a response
     :param data:
     :return:
     """
+    if msg_id == const.NAV_HMI_REQ:
+        identifier = const.NAV_HMI_RESP
+    else:
+        identifier = const.AC_HMI_RESP
+
     print('Sending a reply to the application controller')
     # TODO: split big messages into multiple
     msg = can.Message(arbitration_id=identifier, data=data, extended_id=False)
@@ -43,7 +48,7 @@ def process_msg(msg):
     process_time = uniform(0.5, 3.0)
     time.sleep(process_time)
     data = b'RESP'
-    send_response(data)
+    send_response(data, msg.arbitration_id)
 
 
 def listen():

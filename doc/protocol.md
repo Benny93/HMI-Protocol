@@ -12,6 +12,17 @@ AN-BUS realisiert.
 ## Datenflusskontrolle (Handshake):
 Empfangene Pakete werden mit der ACK Flag bestätigt.
 Das SG speichert empfangene Daten bis zu ihrer verarbeitung ab.
+Mit einem Filter entscheidet ein SG, ob es ein Frame zwischenspeichert oder Verwirft
+Die Nachrichten sind über die ´arbitration_id´ geknnzeichnet und werden über diese den SGs zugeordnet.
+
+Das HMI antwortet einem SG indem es im Bereich dessen arbitration_id Antwortet.
+Für die arbitration_id s gibt es masken.
+Diese Verhalten sich vergleichbar mit den Masken von IP-Adressen.
+Die Aufteilung der Topics geschickt folglich über die Masken.
+Das Problem hierbei: Masken mit Hohen Werten werden sehr niedrig priorisiert.
+Die Maske für die Antworten des HMI ist daher so zu wählen, dass dessen arbitration_id möglichst niedrig bleibt.
+
+
 
 ## Vereinbarung der verschiedenen Verbindungscharakteristiken
 Die Verbindung enthält nur Multicast-Pakete (da CAN).

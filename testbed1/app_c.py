@@ -12,13 +12,12 @@ Generic application controller for testing
 class AppController():
     bustype = 'socketcan_native'
     channel = 'vcan0'
-    identifier = None
+
     bus = None
     filter = [{"can_id": 0x0, "can_mask": 0x7FF}]
     recv_timeout = 5.0
 
-    def __init__(self, identifier):
-        self.identifier = identifier
+    def __init__(self, ):
         self.bus = can.interface.Bus(channel=self.channel, bustype=self.bustype)
         self.bus.set_filters(self.filter)
 
@@ -30,7 +29,7 @@ class AppController():
             # timeout
             print("Timeout! ")
             self.send_request()
-        elif msg.arbitration_id == 0x0:
+        else:
             # received msg from hmi controller
             # TODO: This does not work with multiple app controllers
             print("received reply from hmi controller")
@@ -38,14 +37,12 @@ class AppController():
             # done listening
             # continue processing the application
             self.process_application_logic()
-        else:
-            # read the next message/frame
-            self.listen_for_reply()
+
 
     def send_request(self):
         print('Sending a request to the hmi controller')
         # TODO: split big messages into multiple
-        msg = can.Message(arbitration_id=self.identifier, data=b'REQ', extended_id=False)
+        msg = can.Message(arbitration_id=0x0, data=b'REQ', extended_id=False)
         print(str(msg))
         # TODO: Manage timeout
         self.bus.send(msg)
