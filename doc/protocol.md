@@ -1,6 +1,10 @@
 # HMI-Protocol
 Lang: German
 
+## Annahmen
+Der CAN-Bus ist für die Vorliegende Anwendung reserviert.
+Es werden daher keine Kritischen Daten über den CAN-Bus gesendet (Steuerung des Motors/ Bremssystem)
+
 ## Physikalische Verbindung: 
 Das Protokoll ist CAN-Bus basiert, daher wird die Kommunikation über einen
 AN-BUS realisiert. 

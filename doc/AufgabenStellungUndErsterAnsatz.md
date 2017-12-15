@@ -48,6 +48,13 @@ Identifikation: Für die korrekte Zuordnung müssen Pakete identifiziert werden 
 Niedrige ID bdeutet hohe priorität.
 Das HMI hat vorrang, sollte also eine niedrigere ID haben als die anderen Geräte.
 
+
+### Filter und Masken
+Mit Filtern kann angegeben werden, von welchen Knoten Frames akzeptiert werden.
+Die Maske gibt dabei, ähnlich wie bei IP-Netzen an, welcher Teil des Filters gematched wird.
+FilterID=00001 und mask=11111 bedeutet, dass jedes Bit des Identifier der FilterID entsprechen muss.
+
+
 ## Was gehört alles in ein Protokoll?
 - Feststellen der zugrundeliegenden physikalischen Verbindung (z. B. LAN oder W-LAN) oder der Existenz des anderen Endpunkts der Verbindung
 - Datenflusskontrolle (Handshaking)
