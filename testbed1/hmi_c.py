@@ -136,7 +136,16 @@ def listen(expected_type=None, timeout=0):
         :returns message of expected type
     """
     print("Listening...")
+    if timeout < 0:
+        # timeout
+        print("Timeout for expected frame")
+        return None
+    if timeout == 0:
+        # non blocking timeout
+        timeout = None
+    start_time = time.time()
     msg = bus.recv()
+    elapsed_time = time.time() - start_time
     if msg is None:
         # timeout
         print("Timeout! ")
@@ -145,8 +154,7 @@ def listen(expected_type=None, timeout=0):
         # frame did not match session
         # drop frame and continue listen
         # print("received {}, expected {}".format(expected_type,msg.data[0]))
-        #TODO: caclulate remaining timeout and dont reuse this timeout
-        return listen(expected_type, timeout)
+        return listen(expected_type, timeout-elapsed_time)
     else:
         print("Received msg")
         print(msg)
