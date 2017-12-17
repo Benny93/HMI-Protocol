@@ -3,7 +3,9 @@ Lang: German
 
 ## Annahmen
 Der CAN-Bus ist für die Vorliegende Anwendung reserviert.
-Es werden daher keine kritischen Daten über den CAN-Bus gesendet (Steuerung des Motors/ Bremssystem)
+Es werden daher keine kritischen Daten über den CAN-Bus gesendet (Steuerung des Motors/ Bremssystem).
+Die Nutzereingaben sind nicht größer als 1 KB.  
+Die Nutzereingaben sind nicht endlich, eingeben wie Adressen (Navigation) können vom Nutzer beliebig eingegeben werden.
 
 ## Physikalische Verbindung: 
 Das Protokoll ist CAN-Bus basiert, daher wird die Kommunikation über einen
@@ -12,21 +14,17 @@ CAN-BUS realisiert.
 ## Datenflusskontrolle (Handshake):
 Empfangene Pakete werden mit der ACK Flag bestätigt.
 Das SG speichert empfangene Daten bis zu ihrer verarbeitung ab.
-Mit einem Filter entscheidet ein SG, ob es ein Frame zwischenspeichert oder Verwirft
-Die Nachrichten sind über die ´arbitration_id´ geknnzeichnet und werden über diese den SGs zugeordnet.
+Mit einem Filter entscheidet ein SG, ob es ein Frame zwischenspeichert oder verwirft.
+Die Nachrichten sind über die ´arbitration_id´ geknnzeichnet und werden über diese den SGs zugeordnet.  
 
-Das HMI antwortet einem SG indem es im Bereich dessen arbitration_id Antwortet.
-Für die arbitration_id s gibt es masken.
-Diese Verhalten sich vergleichbar mit den Masken von IP-Adressen.
-Die Aufteilung der Topics geschickt folglich über die Masken.
-Das Problem hierbei: Masken mit Hohen Werten werden sehr niedrig priorisiert.
-Die Maske für die Antworten des HMI ist daher so zu wählen, dass dessen arbitration_id möglichst niedrig bleibt.
+Das HMI antwortet einem SG indem es im Bereich dessen arbitration_id Antwortet.  
 
-Für eine Anfrage des A-SG wird ein Handshake zwischen dem HMI-SG und dem A-SG durchgeführt.
-Mit diesem Handshake einigen sich ebide Seiten darauf, dass das HMI-SG sich nun um die Anfrage des 
+Für eine Anfrage des A-SG wird ein Handshake zwischen dem HMI-SG und dem A-SG durchgeführt.  
+Mit diesem Handshake einigen sich beide Seiten darauf, dass das HMI-SG sich nun um die Anfrage des 
 A-SG kümmern wird.
 
-
+Im Rahmen einer solchen Request-Response-Session nimmt das HMI-SG nur noch Frames des an der Session beteiligten A-SGs an.  
+Hierdurch wird der Zugriff auf das HMI-SG geregelt.
 
 
 ## Vereinbarung der verschiedenen Verbindungscharakteristiken
@@ -34,14 +32,18 @@ Die Verbindung enthält nur Multicast-Pakete (da CAN).
 Die Empfänger filtern selbständig nach den für sie relevanten Paketen.
 CAN 2.0A 11 bit Identifier bietet 2^11 unterschiedliche Nachrichten.
 Wird als ausreichendangesehen, sollten mehr unterschiedliche Nachrichten benötigt werden kann
-auf CAN 2.0B gewechselt werden (hängt von der Anzahl der Geräte ab).
+auf CAN 2.0B gewechselt werden (hängt von der Anzahl der Geräte ab).  
+
+Die Request-Codes sind beiden Parteien zu beginn bekannt und konstant.  
+
+(optional) Es ist vordefiniert, über welchen Nachrichten-Identifier das HMI-SG dem entsprechendem A-SG antwortet.
 
 
 ## Wie eine Botschaft beginnt und endet
 Das Protokoll basiert auf CAN.
-![CAN Frame Wiki](https://de.wikipedia.org/wiki/Controller_Area_Network#/media/File:CAN-Bus-frame_in_base_format_without_stuffbits.svg)
-Die Botschaften bestehen daher aus Frames.
-Start und Entsprechend den durch CAN vorgegeben Aufbau.
+Eine Botschaft wird innerhalb einer Response-Reply-Session übertragen.
+Diese Beginnt mit einem Handshake auf Anfrage des A-SGs und endet nach dem erfolgreichen
+versenden der Antwort/Reply durch das HMI-SG.
 
 
 ## Wie eine Botschaft formatiert ist
@@ -58,6 +60,7 @@ Dies ermöglicht ein dynamisches Einstellen der arbitration-id der Antwort.
 Die Masken der Filter haben für dieses Protokoll keine relevanz.  
 Die arbitration-ids der HMI-SG-Antworten werden auf niedrigere Werde gelegt, da der CAN-Bus niedrige Identifier bevorzugt.
 Hierdurch wird eine effiziente Antwortzeit des HMI-SG unterstützt.  
+
 ### Frame typen
 
 Es gibt 6 Typen von Frames.
@@ -68,6 +71,43 @@ Es gibt 6 Typen von Frames.
 - DATA: Enthält die Antwort des Nutzers
 - FIN: Markiert das Ende einer HMI-Antwort
 
+Welchem Typ ein Frame angehört steht in den ersten 4 Bits der Payload.
+Vereinfacht können auch das erste Byte für den Typen angeben, es werden jedoch nur 4 Bits benötigt.
+Danach kommt ein byte lang die Frame-ID welche bei der Bestätigung durch ein ACK angegeben wird.  
+Die Frame-ID gibt zudem die Reihenfolge an, in der die Pakete versendet wurden.
+Im Falle des DATA-Frames wird die Frame-ID zu einer Sequenz-Nummer die verwendet wird, um die Reiehnfolge der 
+Datenpakte separat betrachten zu können.
+Nachfolgend wird der Aufbau der Payload beschrieben.
+
+#### REQUEST-Frame:
+Hier werden dei restlichen bytes der payload für den eindeutigen Request-Code verwendet.
+Dieser ist in Vorfeld beiden Parteien bekannt und gibt dem HMI-SG an, welche Eingabe vom Nutzer werwartet wird.
+#### REQUEST_ACK-Frame:
+Nach dem Frame-Typ Feld wird die Frame-ID des erhaltennen Pakets hochgezählt und dahinter geschrieben.
+In einem weiterem Byte kann der Timeout für das A-SG übergeben werden.
+Das A-SG wartet diesen Zeitraum ab, bevor es die Verbindung als verloren ansieht.
+Diese Zeitraum sollte an die Bearbeitungsdauer der Anfrage angepasst werden.
+Wird kein Timeout angegeben, wartet das A-SG blockierend, bis zur Antwort.
+#### ACK-Frame:
+Enthält neben dem Frame-Typ die Frame-ID des Frames, dessen Empfang bestätigt wurde.
+
+#### RESPONSE_INFO-Frame:
+Neben Frame-Typ und Frame-ID wird hier die Anzahl der in der vom HMI-SG zum A-SG zu sendenden DATA-Frames an.
+Hierdruch kann sich das A-SG auf den empfang dieser Daten einstellen.
+Für große Datenmengen kann hier auch angegben werden, wieviele DATA-Frames auf einmal durch nur eine ACK-Bestätigt werden können.
+Mit solchen großen Datenmengen ist aber bei den Nutzereingaben über Wahltasten nicht zu rechnen.
+
+#### DATA-Frame:
+Neben Frame-Typ wird die Sequenz-Nummer angegeben, diese ist ein Byte lang.
+Hinter der Seguenz-Nummer können die restlichen 5 Bytes für Daten verwendet werden.
+Soll eine Checksum eingesetzt werden, so befinden sich im 3ten byte keine Daten sondern die Checksum.
+Diese besteht aus der Summer der restlichen Datenbytes modulo 256.
+Durch das Sequenz-Feld können maximal 255 Data-Frames an das A-SG geschickt werden.
+Mit checksum sind das 1020 Bytes und damit genug für die textbasierten Nutzer-Eingaben.
+Müssen mehr Daten versendet werden, kann dies durch Bündelnung von Frames unter einer ACK erfolgen.
+Siehe ISO 15765-2.
+#### FIN-Frame:
+Enthält Frame-Typ und Frame-ID.
 
 
 ## Was mit beschädigten oder falsch formatierten Botschaften getan wird (Fehlerkorrekturverfahren)
