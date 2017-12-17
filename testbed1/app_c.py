@@ -73,7 +73,7 @@ class AppController():
         if user_input is None:
             print("Too many Timeouts while receiving data! Restarting Request")
             return self.send_request(request_code)
-        print("Successful received user")
+        print("Successful received user input")
         # TODO reasonable timeout
         # Close connection
         print("Closing connection")

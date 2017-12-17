@@ -3,11 +3,11 @@ Lang: German
 
 ## Annahmen
 Der CAN-Bus ist für die Vorliegende Anwendung reserviert.
-Es werden daher keine Kritischen Daten über den CAN-Bus gesendet (Steuerung des Motors/ Bremssystem)
+Es werden daher keine kritischen Daten über den CAN-Bus gesendet (Steuerung des Motors/ Bremssystem)
 
 ## Physikalische Verbindung: 
 Das Protokoll ist CAN-Bus basiert, daher wird die Kommunikation über einen
-AN-BUS realisiert. 
+CAN-BUS realisiert. 
 
 ## Datenflusskontrolle (Handshake):
 Empfangene Pakete werden mit der ACK Flag bestätigt.
@@ -22,8 +22,10 @@ Die Aufteilung der Topics geschickt folglich über die Masken.
 Das Problem hierbei: Masken mit Hohen Werten werden sehr niedrig priorisiert.
 Die Maske für die Antworten des HMI ist daher so zu wählen, dass dessen arbitration_id möglichst niedrig bleibt.
 
-TODO: Wie kann der Handshake realisiert werden?
-Beim Handshake kann ausgehandelt werden, wieviele Frames das A-SG senden wird.
+Für eine Anfrage des A-SG wird ein Handshake zwischen dem HMI-SG und dem A-SG durchgeführt.
+Mit diesem Handshake einigen sich ebide Seiten darauf, dass das HMI-SG sich nun um die Anfrage des 
+A-SG kümmern wird.
+
 
 
 
@@ -43,37 +45,67 @@ Start und Entsprechend den durch CAN vorgegeben Aufbau.
 
 
 ## Wie eine Botschaft formatiert ist
-Die Botschaft muss immer der Absender Enthalten.
-Zusätzlich soll über den Absender festgestellt werden können, ob es sich um ein A-SG oder ein HMI-SG handelt.
+Die Botschaften bestehen aus CAN-Frames.
+Die arbitrations id gibt dabei an, welches A-SG die Nachricht gesendet hat.
+Bei einer Anfrage aktiviert das A-SG einen Filter und hört somit nur noch auf CAN-Frames die
+vom HMI-SG direkt an das A-SG gerichtet sind.  
+Die arbitrations-id sind also vergleichbar mit Topics in Publish-Subscribe-Nachrichten.  
+Um einem A-SG direkt zu antworten, wählt das HMI-SG die arbutrations-id, folglich die Topic, auf die das A-SG hört.  
+Hierdurch hören A-SGs nur auf Antworten, die auch für sie bestimmt sind.  
+Die Zuordnung der arbitration-ids zu den A-SGs wird im Vorfeld festgelegt.
+Optional kann das A-SG auch die arbitration-id von der es eine Antwort erwartet in der Anfrage bekannt geben.
+Dies ermöglicht ein dynamisches Einstellen der arbitration-id der Antwort.  
+Die Masken der Filter haben für dieses Protokoll keine relevanz.  
+Die arbitration-ids der HMI-SG-Antworten werden auf niedrigere Werde gelegt, da der CAN-Bus niedrige Identifier bevorzugt.
+Hierdurch wird eine effiziente Antwortzeit des HMI-SG unterstützt.  
+### Frame typen
 
-Die Empfangsbestätigung erfolgt durch das CAN-Protokoll.
-Hierbei setzten die CAN-Bus Knoten des ACK Bit auf high, sofern sie die Nachricht fehlerfrei erhalten haben.
+Es gibt 6 Typen von Frames.
+- REQUEST: Enthält die Anfrage in Form eines fordefinierten Anfragecodes
+- REQUEST_ACK: HMI-SG nimmmt die Anfrage an und wird diese bearbeiten
+- ACK: Bestätigt den Erhalt eines DATA, REQUEST_ACK oder FIN-Pakets
+- RESPONSE_INFO: Gibt Informationen darüber, wieviele DATA-Frames übertragen werden und gibt einen Timeout an.
+- DATA: Enthält die Antwort des Nutzers
+- FIN: Markiert das Ende einer HMI-Antwort
 
-Das HMI-SG hat eine höhere Prio als die A-SGs.
-Daher wird ein niedriger Identifier vergeben.
-Das bewirkt im CAN-Protokoll eine Bevorzugung des HMI-SG und sorgt so für eine möglichst schnelle Antwort des HMI-SG.
-Die schnelle/effiziente Antwort ist wichtig, damit das HMI-SG die Anfragen anderer A-SG beantworten kann.
 
 
 ## Was mit beschädigten oder falsch formatierten Botschaften getan wird (Fehlerkorrekturverfahren)
-Beschädigte Botschaften werden abgelehnt und dem Absender ein festgelegtes Fehlermeldungs-Frame zugeschickt.
-Hierdurch erhält der Absender die Information, dass sein Paket nur beschädigt eingetroffen ist, und kann es erneut senden.
-Die Fehlermeldung muss die ID des Frames enthalten, sodass der Sender weiß, um welches Frame es sich handelt.
+Die Payload eines DATA-Frames kann mit einer ein byte großen Checksum versehen werden.
+Diese wird aus der Summe der Datenbytes modulo 256 berechnet.
+Errechnet sich die Prüfsumme nicht aus den Empfangen Daten, wird kein ACK vom A-SG versendet.
+Das HMI-SG läuft daraufhin in einen Timout für das ACK und Sendet das Paket erneut.
+Wie oft das HMI-SG erneut sendet ist konfigurationsabhängig.
+Nach zu vielen Fehlübertragungen bricht das HMI-SG die Datenübertragung ab und wartet auf neue Anfragen durch A-SGs.
+In diesem Fall wird von einem defektem A-SG ausgegangen. 
+Das A-SG läuft ebenfalls in ein Timeout und wird seine Anfrage erneut stellen.
+Hierdurch tritt es wieder in Konkurrenz mit den anderen A-SG, wodurch diese eine Chance auf die Bearbeitung ihrer Anfrage erhalten.
+
 
 ## Wie unerwarteter Verlust der Verbindung festgestellt wird und was dann zu geschehen hat
-Wird die Verbindung unerwartet beendet, beginnen die Instanzen ihre Kommunikation sofern möglich vom der letzen 
-erfolgreichen Kommunikation aus erneut. 
-Im Fall eines kompletten Verlustes der Frames, wird die Verbinung neu gestartet.
+Der Verlust der Verbindung wird durch das verstreichen eines Timeouts festgestellt.
+Hier wird davon ausgegangen, dass die A-SGs nur nach erfolreicher Kommunikation ihre Arbeit fortsetzen können.
+Wird eine Anfrage nicht durch ein Request-ACK-bestätigt, versucht das A-SG nach einem Timeout die Request erneut zu stellen.
+Dies verhindert, dass das A-SG auf unbestimmte Zeit blockiert wird.
+Zudem ermöglicht die erneute Anfrage an das HMI-SG die Chance auf einen neuen Verbindungsaufbau.
 
-Die Instanzen sollen weiterarbeiten können, sobald sie sich wieder gegenseitig erreichen können.
-Daher pausiert jede Instanz so lange, bis die Verbinung wieder aufgebaut werden konnte.
-
-Hier wird davon ausgegangen, dass die Instanzen nur nach erfolreicher Kommunikation ihre Arbeit fortsetzen können.
-Der Nachteil an diesem Ansatz ist, dass die Instanzen durch das Warten auf die Verbindung blockiert werden.
+Innerhalb einer Verbindung besteht auch die Option die Timeouts zu deaktivieren.
+In diesem Fall sind die A-SGs blockiert, während diese auf eine Antwort des HMI-SGs warten.
 
 ## Beendigung der Verbindung
-Die Beendigung der Verbindung kann sowohl vom HMI-SG als auch vom A-SG ausgehen.
-Hierbei wird ein vordefiniertes Frame mit Absender und Empfänger zum Beenden der Verbindung gesendet.
-Der HMI-SG hat die möglichkeit, bei einem zu langen Timeout des A-SGs die Verbinung zu beenden.
-Das A-SG beendet die verbindung, sobald es die im Moment erforderliche Kommunikation zum HMI-SG abgeschlossen hat.
+Die Antworten des HMI-SGs bestehen aus einem oder mehreren Frames.
+Das HMI-SG beendet die Verbindung, sobald es für jedes zu sende Frame eine bestätigung des A-SG erhält.
+Zum Beenden der Verbindung sendet das HMI-SG ein FIN-Frame.
+Wird dieses vom A-SG bestätigt, wissen beide Seiten, dass die Verbindung nun beendet ist.
+Das HMI-SG nimmt nun wieder neue Anfragen entgegen.  
 
+Der HMI-SG hat die möglichkeit, bei einem zu langen Timeout des A-SGs die Verbinung zu beenden.
+Dazu wartet das HMI-SG nicht mehr weiter, sondern nimmt wieder neue Anfragen entgegen.  
+
+Auch das A-SG kann die Verbindung beenden, wenn es zu einem Timeout kommt.  
+Hierzu versucht es die Anfrage von Neuem zu senden.
+Das HMI-SG wird ebenfalls in einen Timeout laufen und somit wieder neue Anfragen Annehmen.  
+
+Die bei Verlust der Verbindung wird folglich durch einen Timeout in den Ursprungszustand zurückgekehrt, 
+so lange, bis die Anfrage erfolreich war.
+Nach der Annahme, dass das A-SG die Antwort auf die Anfrage benötigt um weiterarbeiten zu können, ist diese Maßenahme sinnvoll.  
