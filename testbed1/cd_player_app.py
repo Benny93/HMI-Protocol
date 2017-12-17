@@ -11,9 +11,11 @@ class CDPlayerApp(AppController):
         super().__init__()
 
     def process_application_logic(self):
-        for i in range(0, 10):
+        for i in range(0, 5):
+            print('Sending request "Set Track Number"')
             temp = self.send_request(request_code=const.CDP_REQ_TRACK_NO)
             print("CD Track selected by user " + temp)
+            print('-' * 80)
             time.sleep(1)
 
 

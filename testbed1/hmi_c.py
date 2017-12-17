@@ -8,10 +8,17 @@ from random import uniform
 hmi controller prototype that acts like a server
 
 """
-#TODO: Mapping is send by the requesting app-controller
+# TODO: Mapping is send by the requesting app-controller
 response_id_by_sender_id = {const.NAV_HMI_REQ: const.NAV_HMI_RESP,
                             const.AC_HMI_REQ: const.AC_HMI_RESP,
                             const.CDP_HMI_REQ: const.CDP_HMI_RESP}
+
+ctlr_name_by_arbitration_id = {const.NAV_HMI_REQ: "Navigation App Controller",
+                               const.AC_HMI_REQ: "Air Conditioning App Controller",
+                               const.CDP_HMI_REQ: "CD Player App Controller"}
+req_name_by_req_code = {const.NAV_REQ_DESTINATION: "Set Destination",
+                        const.AC_REQ_TEMPERATURE: "Set Temperature",
+                        const.CDP_REQ_TRACK_NO: "Set Track Number"}
 
 bustype = 'socketcan_native'
 channel = 'vcan0'
@@ -30,10 +37,9 @@ def send_frame(data, arbitraton_id):
     :return:
     """
     identifier = response_id_by_sender_id[arbitraton_id]
-    print('Sending a reply to the application controller with id: {} answer on {}'.format(arbitraton_id, identifier))
-    # TODO: split big messages into multiple
+    # print('Sending a reply to the application controller with id: {} answer on {}'.format(arbitraton_id, identifier))
     msg = can.Message(arbitration_id=identifier, data=data, extended_id=False)
-    print(msg)
+    # print(msg)
     # wait until ready to send
     bus.send(msg)
 
@@ -97,8 +103,9 @@ def process_request(msg):
         # timeout while waiting for ack, return to listen
         return process_request(listen(const.REQUEST))
     # process the request
-    print("Processing the Request with code {}".format(request_code))
-    #time.sleep(uniform(0.5, 2.0))
+    print('Processing the Request with code {}:"{}" by {}'.format(request_code, req_name_by_req_code[request_code],
+                                                                  ctlr_name_by_arbitration_id[ctlr_arbitration_id]))
+    # time.sleep(uniform(0.5, 2.0))
     time.sleep(3)
     user_input = acquire_user_input(request_code)
     data_frames = create_frames(user_input)
@@ -120,6 +127,7 @@ def process_request(msg):
     fin = [const.REQUEST_FIN, pid + 1]
     send_frame(fin, ctlr_arbitration_id)
     fin_ack = listen(const.ACK, server_timeout)
+    # TODO: Session close is not considered in this prototype yet
     # if fin_ack is None:
     # fin ack not received
     # TODO: try again to close session
@@ -135,7 +143,9 @@ def listen(expected_type=None, timeout=0):
         no timeout
         :returns message of expected type
     """
-    print("Listening...")
+    if expected_type == const.REQUEST:
+        print("Awaiting app controller request...")
+
     if timeout < 0:
         # timeout
         print("Timeout for expected frame")
@@ -154,10 +164,10 @@ def listen(expected_type=None, timeout=0):
         # frame did not match session
         # drop frame and continue listen
         # print("received {}, expected {}".format(expected_type,msg.data[0]))
-        return listen(expected_type, timeout-elapsed_time)
+        return listen(expected_type, timeout - elapsed_time)
     else:
-        print("Received msg")
-        print(msg)
+        # print("Received msg")
+        # print(msg)
         return msg
 
 

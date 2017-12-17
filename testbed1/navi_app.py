@@ -13,9 +13,11 @@ class NavigationApp(AppController):
 
     def process_application_logic(self):
         # Obtain destination from Driver
-        for i in range(0, 10):
+        for i in range(0, 5):
+            print('Sending request "Set Destination"')
             destination = self.send_request(request_code=const.NAV_REQ_DESTINATION)
             print ("Destination of user " + destination)
+            print('-' * 80)
             time.sleep(1)
 
 

@@ -16,11 +16,12 @@ class AirConditioningApp(AppController):
         self.request_arbitration_id = const.AC_HMI_REQ
         super().__init__()
 
-
     def process_application_logic(self):
-        for i in range(0, 10):
+        for i in range(0, 5):
+            print('Sending request "Set Temperature"')
             temp = self.send_request(request_code=const.AC_REQ_TEMPERATURE)
             print("Temperature selected by user " + temp)
+            print('-' * 80)
             time.sleep(1)
 
 

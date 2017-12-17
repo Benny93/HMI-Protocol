@@ -31,7 +31,7 @@ class AppController():
         msg = self.bus.recv(timeout=timeout)
         if msg is None:
             # timeout
-            print("Timeout! ")
+            print("Timeout. Retry")
             return None
         elif len(msg.data) == 0:
             print("Data len is null")
@@ -55,7 +55,8 @@ class AppController():
         if req_ack is None:
             return self.send_request(request_code)
         # received req_ack, send ack
-        print("received req_ack, send ack")
+        #print("received req_ack, send ack")
+        print ("Establishing Connection")
         self.send_ack(req_ack)
         # listen for response info
         timeout = req_ack.data[2]
@@ -66,7 +67,7 @@ class AppController():
             self.send_request(request_code)
             return
         resp_num_frames = resp_info.data[2]
-        print("received response_info, send ack")
+        #print("received response_info, send ack")
         self.send_ack(resp_info)
         # start receiving data frames
         user_input = self.receive_multipart_msg(resp_num_frames)
@@ -93,8 +94,8 @@ class AppController():
         if data_frame is None:
             print("Data Timeout!")
             return self.receive_data_frame(tries + 1)
-        print("Received Data")
-        print(data_frame)
+        #print("Received Data")
+        #print(data_frame)
         user_input = ""
         for i in range(2, len(data_frame.data)):
             user_input = user_input + chr(data_frame.data[i])
@@ -114,8 +115,8 @@ class AppController():
 
     def send_frame(self, data):
         msg = can.Message(arbitration_id=self.request_arbitration_id, data=data, extended_id=False)
-        print("Sending frame:")
-        print(str(msg))
+        #print("Sending frame:")
+        #print(str(msg))
         self.bus.send(msg)
 
     def send_ack(self, msg):
