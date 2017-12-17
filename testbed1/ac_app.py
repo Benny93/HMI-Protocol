@@ -14,15 +14,15 @@ class AirConditioningApp(AppController):
         self.filter = [{"can_id": const.AC_HMI_RESP, "can_mask": 0x7FF}]
         super().__init__()
 
-    def listen_for_reply(self):
-        super().listen_for_reply()
+    def listen(self):
+        super().listen()
 
     def send_request(self):
         msg = can.Message(arbitration_id=const.AC_HMI_REQ, data=b'REQ', extended_id=False)
         print(str(msg))
         self.bus.send(msg)
         # when done sending
-        self.listen_for_reply()
+        self.listen()
 
     def process_application_logic(self):
         super().process_application_logic()

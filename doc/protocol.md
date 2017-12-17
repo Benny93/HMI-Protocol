@@ -22,11 +22,17 @@ Die Aufteilung der Topics geschickt folglich über die Masken.
 Das Problem hierbei: Masken mit Hohen Werten werden sehr niedrig priorisiert.
 Die Maske für die Antworten des HMI ist daher so zu wählen, dass dessen arbitration_id möglichst niedrig bleibt.
 
+TODO: Wie kann der Handshake realisiert werden?
+Beim Handshake kann ausgehandelt werden, wieviele Frames das A-SG senden wird.
+
 
 
 ## Vereinbarung der verschiedenen Verbindungscharakteristiken
 Die Verbindung enthält nur Multicast-Pakete (da CAN).
 Die Empfänger filtern selbständig nach den für sie relevanten Paketen.
+CAN 2.0A 11 bit Identifier bietet 2^11 unterschiedliche Nachrichten.
+Wird als ausreichendangesehen, sollten mehr unterschiedliche Nachrichten benötigt werden kann
+auf CAN 2.0B gewechselt werden (hängt von der Anzahl der Geräte ab).
 
 
 ## Wie eine Botschaft beginnt und endet

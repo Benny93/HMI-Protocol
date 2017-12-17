@@ -21,7 +21,7 @@ class AppController():
         self.bus = can.interface.Bus(channel=self.channel, bustype=self.bustype)
         self.bus.set_filters(self.filter)
 
-    def listen_for_reply(self):
+    def listen(self, code=None, timeout=0):
         print("Listening for reply")
         # TODO : Should send again if waited to long for a response (only wrong frames received)
         msg = self.bus.recv(timeout=self.recv_timeout)
@@ -31,15 +31,13 @@ class AppController():
             self.send_request()
         else:
             # received msg from hmi controller
-            # TODO: This does not work with multiple app controllers
             print("received reply from hmi controller")
             print(msg)
             # done listening
             # continue processing the application
             self.process_application_logic()
 
-
-    def send_request(self):
+    def send_request(self, code=None):
         print('Sending a request to the hmi controller')
         # TODO: split big messages into multiple
         msg = can.Message(arbitration_id=0x0, data=b'REQ', extended_id=False)
@@ -47,7 +45,7 @@ class AppController():
         # TODO: Manage timeout
         self.bus.send(msg)
         # when done sending
-        self.listen_for_reply()
+        self.listen()
 
     def process_application_logic(self):
         process_time = uniform(0.5, 2.0)
