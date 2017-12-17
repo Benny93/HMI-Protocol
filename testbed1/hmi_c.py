@@ -8,8 +8,10 @@ from random import uniform
 hmi controller prototype that acts like a server
 
 """
-
-response_id_by_sender_id = {const.NAV_HMI_REQ: const.NAV_HMI_RESP, const.AC_HMI_REQ: const.AC_HMI_RESP}
+#TODO: Mapping is send by the requesting app-controller
+response_id_by_sender_id = {const.NAV_HMI_REQ: const.NAV_HMI_RESP,
+                            const.AC_HMI_REQ: const.AC_HMI_RESP,
+                            const.CDP_HMI_REQ: const.CDP_HMI_RESP}
 
 bustype = 'socketcan_native'
 channel = 'vcan0'
@@ -46,7 +48,9 @@ def acquire_user_input(request_code):
         return "Schwaerzlocherstrasse 109, Tuebingen"
     if request_code == const.AC_REQ_TEMPERATURE:
         return "25"
-    return "missing user input"
+    if request_code == const.CDP_REQ_TRACK_NO:
+        return "4"
+    return "missing test user input"
 
 
 def create_frames(user_input):
@@ -91,10 +95,9 @@ def process_request(msg):
     ack = listen(const.ACK, server_timeout)
     if ack is None:
         # timeout while waiting for ack, return to listen
-        listen()
-        return
+        return process_request(listen(const.REQUEST))
     # process the request
-    print("Sleeping")
+    print("Processing the Request with code {}".format(request_code))
     #time.sleep(uniform(0.5, 2.0))
     time.sleep(3)
     user_input = acquire_user_input(request_code)
@@ -109,8 +112,7 @@ def process_request(msg):
     info_ack = listen(const.ACK, server_timeout)
     if info_ack is None:
         # timeout: continue listen for requests
-        listen()
-        return
+        return process_request(listen(const.REQUEST))
     # send data
     print("Sending Data...")
     send_mulipart_data(data_frames, ctlr_arbitration_id, 1)
@@ -143,6 +145,7 @@ def listen(expected_type=None, timeout=0):
         # frame did not match session
         # drop frame and continue listen
         # print("received {}, expected {}".format(expected_type,msg.data[0]))
+        #TODO: caclulate remaining timeout and dont reuse this timeout
         return listen(expected_type, timeout)
     else:
         print("Received msg")

@@ -34,6 +34,10 @@ NAV_HMI_REQ = 0x000011
 AC_HMI_RESP = 0x000002
 AC_HMI_REQ = 0x000021
 
+# cd player
+CDP_HMI_RESP = 0x000003
+CDP_HMI_REQ = 0x000031
+
 """
 Request Codes
 """
@@ -42,3 +46,6 @@ NAV_REQ_DESTINATION = 10
 
 # Air conditioning
 AC_REQ_TEMPERATURE = 20
+
+# cd player
+CDP_REQ_TRACK_NO = 30
