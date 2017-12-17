@@ -9,7 +9,7 @@ hmi controller prototype that acts like a server
 
 """
 
-response_id_by_sender_id = {const.NAV_HMI_REQ: const.NAV_HMI_RESP}
+response_id_by_sender_id = {const.NAV_HMI_REQ: const.NAV_HMI_RESP, const.AC_HMI_REQ: const.AC_HMI_RESP}
 
 bustype = 'socketcan_native'
 channel = 'vcan0'
@@ -28,7 +28,7 @@ def send_frame(data, arbitraton_id):
     :return:
     """
     identifier = response_id_by_sender_id[arbitraton_id]
-    print('Sending a reply to the application controller')
+    print('Sending a reply to the application controller with id: {} answer on {}'.format(arbitraton_id, identifier))
     # TODO: split big messages into multiple
     msg = can.Message(arbitration_id=identifier, data=data, extended_id=False)
     print(msg)
@@ -36,9 +36,17 @@ def send_frame(data, arbitraton_id):
     bus.send(msg)
 
 
-def acquire_user_iput(request_code):
-    # if request_code ==
-    return "Some response from user"
+def acquire_user_input(request_code):
+    """
+    Stub
+    :param request_code:
+    :return: predefined test user inputs
+    """
+    if request_code == const.NAV_REQ_DESTINATION:
+        return "Schwaerzlocherstrasse 109, Tuebingen"
+    if request_code == const.AC_REQ_TEMPERATURE:
+        return "25"
+    return "missing user input"
 
 
 def create_frames(user_input):
@@ -87,8 +95,9 @@ def process_request(msg):
         return
     # process the request
     print("Sleeping")
-    time.sleep(uniform(0.5, 2.0))
-    user_input = acquire_user_iput(request_code)
+    #time.sleep(uniform(0.5, 2.0))
+    time.sleep(3)
+    user_input = acquire_user_input(request_code)
     data_frames = create_frames(user_input)
     # send response info
     resp_num_frames = len(data_frames)

@@ -38,4 +38,7 @@ AC_HMI_REQ = 0x000021
 Request Codes
 """
 # Navigation
-NAV_REQ_DESTINATION = 0
+NAV_REQ_DESTINATION = 10
+
+# Air conditioning
+AC_REQ_TEMPERATURE = 20
